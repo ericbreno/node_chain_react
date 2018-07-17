@@ -1,0 +1,41 @@
+<head>
+    <title>Chain Reaction</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+
+    <!-- Por enquanto deixa o CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.js"></script>
+</head>
+
+<body ng-app="chainReaction" ng-strict-di>
+
+    <div ng-controller="ChainReactionController as ctrl">
+        <div ng-repeat="linha in ctrl.matrix track by $index">
+            <div style="display: inline-block; border: 1px solid black; height: 30px; width: 30px"
+                ng-style="{ 'background-color': el.color }" 
+                ng-repeat="el in linha track by $index">
+                <img ng-src="{{ctrl.getIcon(el.size)}}" 
+                    style="margin: auto"
+                    alt="" width="28px" height="28px"
+                    ng-click="ctrl.click(el.y, el.x)">
+            </div>
+        </div>
+
+        <div>
+            <form ng-submit="ctrl.click(x, y)">
+                <input type="text" ng-model="x">
+                <input type="text" ng-model="y">
+                <button type="submit">Update</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pre-imports -->
+    <script src="src/js/app.config.js"></script>
+    
+    <!-- Core -->
+    <script src="src/js/core/ChainReaction.js"></script>
+    
+    <!-- Controller -->
+    <script src="src/js/controller/ChainReaction.controller.js"></script>
+
+</body>
