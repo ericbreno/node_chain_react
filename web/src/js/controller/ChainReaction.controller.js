@@ -1,15 +1,24 @@
 app.controller('ChainReactionController', ['$timeout', 'BoardImp', function ($timeout, BoardImp) {
-    const board = new BoardImp(5, 5);
+    let player = 1;
+    let players = 2;
+    let board;
 
-    this.matrix = board.viewMatrix;
+    const colors = ['', 'red', 'green', 'blue', 'yellow', 'pink', 'cyan', 'orange', 'light-green'];
 
-    this.click = (x, y) => board.update(x, y);
-
-    this.getIcon = stack => {
-        const asset = stack > 2 ? "triple.png"
-            : stack > 1 ? "double.png"
-            : stack > 0 ? "single.png" 
-            : "blank.png";
-        return `src/assets/${asset}`;
+    this.makeBoard = (sx = 5, sy = 5, ps = 2) => {
+        players = ps;
+        player = 1;
+        board = new BoardImp(sx, sy, ps);
+        this.matrix = board.viewMatrix;
     };
+
+    this.click = (x, y) => {
+        const sucesso = board.update(x, y, player);
+        if (sucesso)
+            player = Math.max(1, (player + 1) % (players + 1))
+    };
+
+    this.getColor = (number = player) => colors[number];
+
+    this.makeBoard();
 }]);

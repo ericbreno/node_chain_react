@@ -1,16 +1,10 @@
 
 app.factory('BoardImp', ['$timeout', function ($timeout) {
-    var Colors;
-    (function (Colors) {
-        Colors["Blank"] = "white";
-        Colors["Blue"] = "light-blue";
-        Colors["Yellow"] = "yellow";
-        Colors["Red"] = "red";
-        Colors["Green"] = "light-green";
-    })(Colors || (Colors = {}));
 
-    function SquareImp(color, x, y, width, height) {
-        this.color = color;
+    const BLANK = 0;
+
+    function SquareImp(x, y, width, height) {
+        this.player = BLANK;
         this.x = x;
         this.y = y;
         this.width = width;
@@ -20,17 +14,17 @@ app.factory('BoardImp', ['$timeout', function ($timeout) {
 
     SquareImp.prototype.isCorner = function () {
         return this.x === 0 && this.y === 0
-            || this.x === this.width && this.y === 0
-            || this.x === 0 && this.y === this.height
-            || this.x === this.width && this.y === this.height;
+            || this.x === (this.width - 1) && this.y === 0
+            || this.x === 0 && this.y === (this.height - 1)
+            || this.x === (this.width - 1) && this.y === (this.height - 1);
     };
 
     SquareImp.prototype.isWall = function () {
         return !this.isCorner() &&
             (this.x === 0
                 || this.y === 0
-                || this.x === this.width
-                || this.y === this.height);
+                || this.x === (this.width - 1)
+                || this.y === (this.height - 1));
     };
 
     SquareImp.prototype.getIcon = function () {
@@ -53,26 +47,28 @@ app.factory('BoardImp', ['$timeout', function ($timeout) {
         return sides.filter((side) =>
             side[0] >= 0
             && side[1] >= 0
-            && side[0] <= this.width
-            && side[1] <= this.height
+            && side[0] < this.width
+            && side[1] < this.height
         );
     };
 
-    function BoardImp(width, height) {
+    function BoardImp(width, height, players = 2) {
         this.width = width;
         this.height = height;
+        this.players = players + 1;
+        this.nextPlayer = 1;
         this.initMatrix();
     }
 
     BoardImp.prototype.initMatrix = function () {
         this.matrix = [];
         this.viewMatrix = [];
-        for (let x = 0; x <= this.width; x++) {
+        for (let x = 0; x < this.width; x++) {
             const row = [];
             const viewRow = [];
-            for (let y = 0; y <= this.height; y++) {
-                row.push(new SquareImp(Colors.Blank, x, y, this.width, this.height));
-                viewRow.push(new SquareImp(Colors.Blank, x, y, this.width, this.height));
+            for (let y = 0; y < this.height; y++) {
+                row.push(new SquareImp(x, y, this.width, this.height));
+                viewRow.push(new SquareImp(x, y, this.width, this.height));
             }
             this.matrix.push(row);
             this.viewMatrix.push(viewRow);
@@ -89,18 +85,29 @@ app.factory('BoardImp', ['$timeout', function ($timeout) {
         const toProccess = [initialSqr];
         const delayUp = 150;
         let iteracao = 0;
+        const PLAYER_ACTIVE = initialSqr.player;
         while (toProccess.length > 0) {
             const sqrChanged = toProccess.shift();
             const limiteIteracoesAtingido = iteracao++ > Math.pow(this.width, 6);
             if (limiteIteracoesAtingido) { break; }
 
-            $timeout(() => (this.viewMatrix[sqrChanged.x][sqrChanged.y].size = sqrChanged.size), iteracao * delayUp);
+            const N_SIZE_BASE = sqrChanged.size;
+            const N_COLOR_BASE = sqrChanged.player;
+            $timeout(() => {
+                this.viewMatrix[sqrChanged.x][sqrChanged.y].size = N_SIZE_BASE;
+                this.viewMatrix[sqrChanged.x][sqrChanged.y].player = N_COLOR_BASE;
+            }, iteracao * delayUp);
 
             if (!sqrChanged.mayExplode()) { continue; }
 
+            // explodiu
             sqrChanged.size = 0;
+            sqrChanged.player = BLANK;
 
-            $timeout(() => (this.viewMatrix[sqrChanged.x][sqrChanged.y].size = 0), iteracao * delayUp);
+            $timeout(() => {
+                this.viewMatrix[sqrChanged.x][sqrChanged.y].size = 0;
+                this.viewMatrix[sqrChanged.x][sqrChanged.y].player = BLANK;
+            }, iteracao * delayUp);
 
             const posicoesLaterais = sqrChanged
                 .getSides()
@@ -108,7 +115,14 @@ app.factory('BoardImp', ['$timeout', function ($timeout) {
 
             posicoesLaterais.forEach(sideSqr => {
                 sideSqr.size++;
-                $timeout(() => this.viewMatrix[sideSqr.x][sideSqr.y].size++, iteracao * delayUp);
+                sideSqr.player = PLAYER_ACTIVE;
+
+                const N_SIZE = sideSqr.size;
+                const N_COLOR = sideSqr.player;
+                $timeout(() => {
+                    this.viewMatrix[sideSqr.x][sideSqr.y].size = N_SIZE;
+                    this.viewMatrix[sideSqr.x][sideSqr.y].player = N_COLOR;
+                }, iteracao * delayUp);
 
                 if (sideSqr.mayExplode()) {
                     toProccess.unshift(sideSqr);
@@ -119,11 +133,25 @@ app.factory('BoardImp', ['$timeout', function ($timeout) {
         };
     };
 
-    BoardImp.prototype.update = function (y, x) {
-        if (x > this.width || y > this.height) {
+    BoardImp.prototype.update = function (y, x, player) {
+        if (player != this.nextPlayer) {
             return false;
         }
+
+        const isInvalidIndex = x > this.width || y > this.height;
+        if (isInvalidIndex) {
+            return false;
+        }
+
         const sqr = this.matrix[x][y];
+        const isInvalidPosition = sqr.player != BLANK && sqr.player != player;
+        if (isInvalidPosition) {
+            return false;
+        }
+
+        this.nextPlayer = Math.max(((this.nextPlayer + 1) % this.players), 1);
+
+        sqr.player = player;
         sqr.size++;
         this.evaluateBoard(sqr);
         return true;

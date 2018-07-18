@@ -4,26 +4,67 @@
 
     <!-- Por enquanto deixa o CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.js"></script>
+
+    <style>
+        .single {
+            background: url(src/assets/single.svg);
+            background-repeat: round;
+        } 
+
+        .double {
+            background: url(src/assets/double.svg);
+            background-repeat: round;
+        } 
+
+        .triple {
+            background: url(src/assets/triple.svg);
+            background-repeat: round;
+        } 
+
+        .inner-square {
+            margin: auto; 
+            width: 28px; 
+            height: 28px
+        } 
+
+        .outer-square {
+            display: inline-block; 
+            border: 1px solid black; 
+            height: 30px; 
+            width: 30px;
+        } 
+
+        .sample-square {
+            height: 15px;
+            width: 15px;
+            display: inline-block;
+        } 
+    </style>
 </head>
 
 <body ng-app="chainReaction" ng-strict-di>
-
     <div ng-controller="ChainReactionController as ctrl">
+        <h3>Vez de 
+            <div class="sample-square" ng-style="{ 'background-color': ctrl.getColor() }"></div>
+        </h3>
+
         <div ng-repeat="linha in ctrl.matrix track by $index">
-            <div style="display: inline-block; border: 1px solid black; height: 30px; width: 30px"
-                ng-style="{ 'background-color': el.color }" 
-                ng-repeat="el in linha track by $index">
-                <img ng-src="{{ctrl.getIcon(el.size)}}" 
-                    style="margin: auto"
-                    alt="" width="28px" height="28px"
-                    ng-click="ctrl.click(el.y, el.x)">
+            <div class="outer-square"
+                ng-style="{ 'background-color': sqr.color }" 
+                ng-repeat="sqr in linha track by $index">
+                <div ng-class="{'single': sqr.size == 1, 'double': sqr.size == 2, 'triple': sqr.size == 3}" 
+                    class="inner-square"
+                    ng-style="{ 'background-color': ctrl.getColor(sqr.player) }"
+                    ng-click="ctrl.click(sqr.y, sqr.x)">
+                </div>
             </div>
         </div>
 
-        <div>
-            <form ng-submit="ctrl.click(x, y)">
-                <input type="text" ng-model="x">
-                <input type="text" ng-model="y">
+        <div style="margin-top: 15px;">
+            <form ng-submit="ctrl.makeBoard(xs, ys, ps)">
+                <input type="number" ng-model="xs" placeholder="Tam X">
+                <input type="number" ng-model="ys" placeholder="Tam Y">
+                <input type="number" ng-model="ps" placeholder="Players">
                 <button type="submit">Update</button>
             </form>
         </div>
