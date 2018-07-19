@@ -1,24 +1,35 @@
-app.controller('ChainReactionController', ['$timeout', 'BoardImp', function ($timeout, BoardImp) {
-    let player = 1;
-    let players = 2;
-    let board;
+app.controller('ChainReactionController', ['$timeout', function ($timeout) {
 
     const colors = ['', 'red', 'green', 'blue', 'yellow', 'pink', 'cyan', 'orange', 'light-green'];
 
-    this.makeBoard = (sx = 5, sy = 5, ps = 2) => {
-        players = ps;
-        player = 1;
-        board = new BoardImp(sx, sy, ps);
-        this.matrix = board.viewMatrix;
+    const ws = new WebSocket('ws://127.0.0.1:1337');
+    ws.onopen = () => {
+        console.log('connection opened succesfully');
+    };
+
+    ws.onerror = function (error) { };
+
+    ws.onmessage = (message) => {
+        let json;
+        try {
+            json = JSON.parse(message.data);
+        } catch (e) {
+            console.log('This doesn\'t look like a valid JSON: ', message.data);
+            return;
+        }
+        if (!this.player) {
+            this.player = json.player;
+        }
+
+        $timeout(() => {
+            this.matrix = json.viewMatrix;
+            this.nextPlayer = json.nextPlayer;
+        });
     };
 
     this.click = (x, y) => {
-        const sucesso = board.update(x, y, player);
-        if (sucesso)
-            player = Math.max(1, (player + 1) % (players + 1))
+        ws.send(JSON.stringify({ x, y }));
     };
 
-    this.getColor = (number = player) => colors[number];
-
-    this.makeBoard();
+    this.getColor = (number) => colors[number];
 }]);

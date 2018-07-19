@@ -44,8 +44,11 @@
 
 <body ng-app="chainReaction" ng-strict-di>
     <div ng-controller="ChainReactionController as ctrl">
-        <h3>Vez de 
-            <div class="sample-square" ng-style="{ 'background-color': ctrl.getColor() }"></div>
+        <h3>Sua cor:
+            <div class="sample-square" ng-style="{ 'background-color': ctrl.getColor(ctrl.player) }"></div>
+            
+            , vez de: 
+            <div class="sample-square" ng-style="{ 'background-color': ctrl.getColor(ctrl.nextPlayer) }"></div>
         </h3>
 
         <div ng-repeat="linha in ctrl.matrix track by $index">
@@ -72,9 +75,6 @@
 
     <!-- Pre-imports -->
     <script src="src/js/app.config.js"></script>
-    
-    <!-- Core -->
-    <script src="src/js/core/ChainReaction.js"></script>
     
     <!-- Controller -->
     <script src="src/js/controller/ChainReaction.controller.js"></script>
