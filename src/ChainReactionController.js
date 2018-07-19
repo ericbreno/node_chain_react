@@ -1,40 +1,47 @@
 const { BoardImp } = require('./ChainReaction');
 
-const players = 2;
-let onChange = () => {};
+let players = 2;
+let onChange = () => { };
 
-const boardX = 5, boardY = 5;
 let board;
-const makeBoard = () => {
-    board = new BoardImp(boardX, boardY, players);
+const makeBoard = (x = 5, y = 5, p = players) => {
+    players = p;
+    board = new BoardImp(x, y, p);
     board.onChange = () => onChange();
     onChange();
 }
 
 makeBoard();
 
-const used = {};
+const used = [];
 const nextPlayer = () => {
-    let temp = players;
-    while (temp && used[temp]) {
-        temp--;
+    let temp = 1;
+    console.log(used);
+    while (temp <= players && used.includes(temp)) {
+        temp++;
     }
     console.log('new player connected, getting color', temp);
-    used[temp] = true;
-    if (temp > 0) {
+    used.push(temp);
+    if (temp <= players) {
         makeBoard();
     }
-    return temp && (players - temp + 1);
+    return temp;
 };
 
 const releasePlayer = player => {
-    used[player] = false;
+    used.splice(used.indexOf(player), 1);
 };
 
 const makeSomething = (thisPlayer, conn) => message => {
     console.log('parsing', message);
     const json = JSON.parse(message.utf8Data);
-    board.update(json.x, json.y, thisPlayer);
+    if (json.jogada) {
+        const jogada = json.jogada;
+        board.update(jogada.x, jogada.y, thisPlayer);
+    } else if (json.boardSetting) {
+        const setting = json.boardSetting;
+        makeBoard(setting.x, setting.y, setting.p);
+    }
 };
 
 const playerLeaving = (thisPlayer) => () => {

@@ -11,4 +11,5 @@ wsServer.on('request', (request) => {
     registerOnChange(m => send(conn, m));
     conn.on('message', makeSomething(thisPlayer, conn));
     conn.on('close', playerLeaving(thisPlayer));
+    conn.on('disconnect', playerLeaving(thisPlayer));
 });

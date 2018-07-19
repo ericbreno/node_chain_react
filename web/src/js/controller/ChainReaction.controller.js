@@ -2,7 +2,7 @@ app.controller('ChainReactionController', ['$timeout', function ($timeout) {
 
     const colors = ['', 'red', 'green', 'blue', 'yellow', 'pink', 'cyan', 'orange', 'light-green'];
 
-    const ws = new WebSocket('ws://127.0.0.1:1337');
+    const ws = new WebSocket(`ws://${window.location.hostname}:1337/`);
     ws.onopen = () => {
         console.log('connection opened succesfully');
     };
@@ -28,8 +28,12 @@ app.controller('ChainReactionController', ['$timeout', function ($timeout) {
     };
 
     this.click = (x, y) => {
-        ws.send(JSON.stringify({ x, y }));
+        ws.send(JSON.stringify({ jogada: { x, y } }));
     };
 
     this.getColor = (number) => colors[number];
+
+    this.updateBoard = (xs, ys, ps) => {
+        ws.send(JSON.stringify({ boardSetting: { x: xs, y: ys, p: ps } }))
+    }
 }]);
