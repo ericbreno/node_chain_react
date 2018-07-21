@@ -8,7 +8,6 @@ function BoardImp(width, height, players = 2) {
     this.height = height;
     this.players = players + 1;
     this.playersCounts = makeArr(this.players);
-    console.log('making board for', this.players);
     this.nextPlayer = 1;
     this.initMatrix();
     this.onChange = () => { };
