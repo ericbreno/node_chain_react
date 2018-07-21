@@ -10,8 +10,6 @@ const makeBoard = (x = 5, y = 5) => {
     onChange();
 }
 
-makeBoard();
-
 const used = [];
 const nextPlayer = () => {
     let temp = 1;
