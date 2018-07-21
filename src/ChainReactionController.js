@@ -1,12 +1,11 @@
 const { BoardImp } = require('./BoardImp');
 
-let players = 2;
+let players = 0;
 let onChange = () => { };
 
 let board;
-const makeBoard = (x = 5, y = 5, p = players) => {
-    players = p;
-    board = new BoardImp(x, y, p);
+const makeBoard = (x = 5, y = 5) => {
+    board = new BoardImp(x, y);
     board.onChange = () => onChange();
     onChange();
 }
@@ -17,19 +16,20 @@ const used = [];
 const nextPlayer = () => {
     let temp = 1;
     console.log(used);
-    while (temp <= players && used.includes(temp)) {
+    while (used.includes(temp)) {
         temp++;
     }
     console.log('new player connected, getting color', temp);
     used.push(temp);
-    if (temp <= players) {
-        makeBoard();
-    }
+    makeBoard();
+    players++;
     return temp;
 };
 
 const releasePlayer = player => {
     used.splice(used.indexOf(player), 1);
+    players--;
+    makeBoard();
 };
 
 const makeSomething = (thisPlayer, conn) => message => {
@@ -40,7 +40,7 @@ const makeSomething = (thisPlayer, conn) => message => {
         board.update(jogada.x, jogada.y, thisPlayer);
     } else if (json.boardSetting) {
         const setting = json.boardSetting;
-        makeBoard(setting.x, setting.y, setting.p);
+        makeBoard(setting.x, setting.y);
     }
 };
 
