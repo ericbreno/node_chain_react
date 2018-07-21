@@ -1,62 +1,17 @@
-
+const { SquareImp } = require('./SquareImp');
 const BLANK = 0;
 
-function SquareImp(x, y, width, height) {
-    this.player = BLANK;
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-    this.size = 0;
-}
-
-SquareImp.prototype.isCorner = function () {
-    return this.x === 0 && this.y === 0
-        || this.x === (this.width - 1) && this.y === 0
-        || this.x === 0 && this.y === (this.height - 1)
-        || this.x === (this.width - 1) && this.y === (this.height - 1);
-};
-
-SquareImp.prototype.isWall = function () {
-    return !this.isCorner() &&
-        (this.x === 0
-            || this.y === 0
-            || this.x === (this.width - 1)
-            || this.y === (this.height - 1));
-};
-
-SquareImp.prototype.getIcon = function () {
-    return this.size > 2 ? "triple.png" : this.size > 1 ? "double.png" : this.size > 0 ? "single.png" : "blank.png";
-};
-
-SquareImp.prototype.mayExplode = function () {
-    return this.isCorner() && this.size >= 2
-        || this.isWall() && this.size >= 3
-        || this.size >= 4;
-};
-
-SquareImp.prototype.getSides = function () {
-    const sides = [
-        [this.x + 1, this.y],
-        [this.x, this.y + 1],
-        [this.x - 1, this.y],
-        [this.x, this.y - 1]
-    ];
-    return sides.filter((side) =>
-        side[0] >= 0
-        && side[1] >= 0
-        && side[0] < this.width
-        && side[1] < this.height
-    );
-};
+const makeArr = (count, arr = []) => count-- && makeArr(count, arr.concat([0])) || arr;
 
 function BoardImp(width, height, players = 2) {
     this.width = width;
     this.height = height;
     this.players = players + 1;
+    this.playersCounts = makeArr(this.players);
+    console.log('making board for', this.players);
     this.nextPlayer = 1;
     this.initMatrix();
-    this.onChange = () => {};
+    this.onChange = () => { };
 }
 
 BoardImp.prototype.initMatrix = function () {
@@ -86,21 +41,22 @@ BoardImp.prototype.evaluateBoard = function (initialSqr) {
     let iteracao = 0;
     const PLAYER_ACTIVE = initialSqr.player;
     while (toProccess.length > 0) {
+        iteracao++;
         const sqrChanged = toProccess.shift();
-        const limiteIteracoesAtingido = iteracao++ > Math.pow(this.width, 6);
-        if (limiteIteracoesAtingido) { break; }
 
-        const N_SIZE_BASE = sqrChanged.size;
-        const N_COLOR_BASE = sqrChanged.player;
-        setTimeout(() => {
-            this.viewMatrix[sqrChanged.x][sqrChanged.y].size = N_SIZE_BASE;
-            this.viewMatrix[sqrChanged.x][sqrChanged.y].player = N_COLOR_BASE;
-            this.onChange();
-        }, iteracao * delayUp);
-
-        if (!sqrChanged.mayExplode()) { continue; }
+        if (!sqrChanged.mayExplode()) {
+            const N_SIZE_BASE = sqrChanged.size;
+            const N_COLOR_BASE = sqrChanged.player;
+            setTimeout(() => {
+                this.viewMatrix[sqrChanged.x][sqrChanged.y].size = N_SIZE_BASE;
+                this.viewMatrix[sqrChanged.x][sqrChanged.y].player = N_COLOR_BASE;
+                this.onChange();
+            }, iteracao * delayUp);
+            continue;
+        }
 
         // explodiu
+        this.playersCounts[sqrChanged.player] -= sqrChanged.size;
         sqrChanged.size = 0;
         sqrChanged.player = BLANK;
 
@@ -110,13 +66,19 @@ BoardImp.prototype.evaluateBoard = function (initialSqr) {
             this.onChange();
         }, iteracao * delayUp);
 
+        if (this.hasWinner()) { continue; }
+
         const posicoesLaterais = sqrChanged
             .getSides()
             .map(side => this.matrix[side[0]][side[1]]);
 
         posicoesLaterais.forEach(sideSqr => {
+            // jogador antigo perde a posição
+            this.playersCounts[sideSqr.player] -= sideSqr.size;
             sideSqr.size++;
             sideSqr.player = PLAYER_ACTIVE;
+            // jogador da vez ganha as peças
+            this.playersCounts[sideSqr.player] += sideSqr.size;
 
             const N_SIZE = sideSqr.size;
             const N_COLOR = sideSqr.player;
@@ -159,12 +121,16 @@ BoardImp.prototype.update = function (y, x, player) {
 
     sqr.player = player;
     sqr.size++;
+    this.playersCounts[player]++;
     this.evaluateBoard(sqr);
     return true;
 };
 
 BoardImp.prototype.hasWinner = function () {
-    return false;
+    const playerThatHaveMoreThanOneBall = this.playersCounts.reduce((ac, it, index) => it > 1 && index || ac, 0);
+    const onlyAbovePlayerHasBalls = this.playersCounts.every((it, index) => it === 0 || index === playerThatHaveMoreThanOneBall);
+    const someonePlayed = playerThatHaveMoreThanOneBall != BLANK;
+    return someonePlayed && onlyAbovePlayerHasBalls;
 };
 
 module.exports = { BoardImp };

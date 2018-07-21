@@ -1,4 +1,4 @@
-const { BoardImp } = require('./ChainReaction');
+const { BoardImp } = require('./BoardImp');
 
 let players = 2;
 let onChange = () => { };
