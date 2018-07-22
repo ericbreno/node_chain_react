@@ -1,14 +1,22 @@
-const { BoardImp } = require('./BoardImp');
+const { BoardImp } = require('./BoardImp'),
+    {
+        PubSub
+        , LEAVING_CHANNEL
+        , BOARD_CHANNEL
+        , PLAY_CHANNEL
+        , SETTING_CHANNEL
+    } = require('./PubSub');
 
-let players = 0;
-let onChange = () => { };
-
+let qttPlayers = 0;
 let board;
-const makeBoard = (x = 5, y = 5) => {
+let onChange = () => {
+    PubSub.pub(BOARD_CHANNEL, board);
+};
+
+const makeBoard = (x, y) => {
     board = new BoardImp(x, y);
     board.onChange = () => onChange();
-    onChange();
-}
+};
 
 const used = [];
 const nextPlayer = () => {
@@ -17,49 +25,41 @@ const nextPlayer = () => {
     while (used.includes(temp)) {
         temp++;
     }
-    console.log('new player connected, getting color', temp);
     used.push(temp);
-    makeBoard();
-    players++;
+    qttPlayers++;
+
+    console.log('new player connected, getting color', temp);
     return temp;
 };
 
 const releasePlayer = player => {
     used.splice(used.indexOf(player), 1);
-    players--;
-    makeBoard();
+    qttPlayers--;
+    resetBoard();
+    
+    console.log('releasing player', player);
 };
 
-const makeSomething = (thisPlayer, conn) => message => {
-    console.log('parsing', message);
-    const json = JSON.parse(message.utf8Data);
-    if (json.jogada) {
-        const jogada = json.jogada;
-        board.update(jogada.x, jogada.y, thisPlayer);
-    } else if (json.boardSetting) {
-        const setting = json.boardSetting;
-        makeBoard(setting.x, setting.y);
-    }
+const resetBoard = (x = 5, y = 5) => {
+    makeBoard(x, y);
+    onChange();
+
+    console.log('resetting board');
 };
 
-const playerLeaving = (thisPlayer) => () => {
-    releasePlayer(thisPlayer);
-    console.log('old player', thisPlayer, 'disconnected');
-};
+PubSub.sub(PLAY_CHANNEL, jogada => {
+    board.update(jogada.x, jogada.y, jogada._player);
+});
 
-const registerOnChange = cb => {
-    const old = onChange;
-    onChange = () => {
-        old();
-        cb(board);
-    };
-    cb(board);
-};
+PubSub.sub(SETTING_CHANNEL, setting => {
+    resetBoard(setting.x, setting.y);
+});
+
+PubSub.sub(LEAVING_CHANNEL, ({ player }) => {
+    releasePlayer(player);
+});
 
 module.exports = {
     nextPlayer,
-    releasePlayer,
-    makeSomething,
-    playerLeaving,
-    registerOnChange
+    resetBoard
 };
