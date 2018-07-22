@@ -2,6 +2,7 @@ const LEAVING_CHANNEL = 'leaving';
 const SETTING_CHANNEL = 'boardSetting';
 const BOARD_CHANNEL = 'board';
 const PLAY_CHANNEL = 'play';
+const UPDATE_PLAY_CHANNEL = 'updateplay'
 
 const PubSub = Object.freeze({
     channels: {},
@@ -57,4 +58,5 @@ const PubSub = Object.freeze({
     g.PLAY_CHANNEL = PLAY_CHANNEL;
     g.SETTING_CHANNEL = SETTING_CHANNEL;
     g.LEAVING_CHANNEL = LEAVING_CHANNEL;
+    g.UPDATE_PLAY_CHANNEL = UPDATE_PLAY_CHANNEL;
 })((typeof module != 'undefined') && module.exports || window);

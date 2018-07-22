@@ -48,10 +48,16 @@
             <div class="sample-square" ng-style="{ 'background-color': ctrl.getColor(ctrl.player) }"></div>
             
             , vez de: 
-            <div class="sample-square" ng-style="{ 'background-color': ctrl.getColor(ctrl.nextPlayer) }"></div>
+            <div class="sample-square" ng-style="{ 'background-color': ctrl.getColor(ctrl.board.nextPlayer) }"></div>
         </h3>
 
-        <div ng-repeat="linha in ctrl.matrix track by $index">
+        <h3 ng-if="ctrl.board.hasWinner()">
+            Fim de jogo,
+            <div class="sample-square" ng-style="{ 'background-color': ctrl.getColor(ctrl.board.nextPlayer-1) }"></div>
+            ganhou!
+        </h3>
+
+        <div ng-repeat="linha in ctrl.board.matrix track by $index">
             <div class="outer-square"
                 ng-style="{ 'background-color': sqr.color }" 
                 ng-repeat="sqr in linha track by $index">
@@ -81,7 +87,10 @@
     
     <!-- PubSub -->
     <script src="pubsub.js"></script>
-    
+
+    <!-- Factories -->
+    <script src="src/js/core/BoardImpClient.js"></script>
+
     <!-- Controller -->
     <script src="src/js/controller/ChainReaction.controller.js"></script>
 </body>

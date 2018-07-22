@@ -10,12 +10,10 @@ function BoardImp(width, height, players = 2) {
     this.playersCounts = makeArr(this.players);
     this.nextPlayer = 1;
     this.initMatrix();
-    this.onChange = () => { };
 }
 
 BoardImp.prototype.initMatrix = function () {
     this.matrix = [];
-    this.viewMatrix = [];
     for (let x = 0; x < this.width; x++) {
         const row = [];
         const viewRow = [];
@@ -24,76 +22,35 @@ BoardImp.prototype.initMatrix = function () {
             viewRow.push(new SquareImp(x, y, this.width, this.height));
         }
         this.matrix.push(row);
-        this.viewMatrix.push(viewRow);
     }
 };
 
-BoardImp.prototype.evaluateBoard = function (initialSqr) {
-    /**
-     * Politica de atualização do tabuleiro:
-     * 1. Verificar square atualizado
-     * 2. Se explodir, verificar para todos vizinhos (rec)
-     * 3. Se não explodir, fim
-     */
-    const toProccess = [initialSqr];
-    const delayUp = 150;
-    let iteracao = 0;
-    const PLAYER_ACTIVE = initialSqr.player;
-    while (toProccess.length > 0) {
-        iteracao++;
-        const sqrChanged = toProccess.shift();
+BoardImp.prototype.evaluateBoard = function (sqrChanged, actualPlayer) {
+    const oldPlayer = sqrChanged.player;
+    // jogador antigo perde a posição
+    this.playersCounts[oldPlayer] -= sqrChanged.size;
 
-        if (!sqrChanged.mayExplode()) {
-            const N_SIZE_BASE = sqrChanged.size;
-            const N_COLOR_BASE = sqrChanged.player;
-            setTimeout(() => {
-                this.viewMatrix[sqrChanged.x][sqrChanged.y].size = N_SIZE_BASE;
-                this.viewMatrix[sqrChanged.x][sqrChanged.y].player = N_COLOR_BASE;
-                this.onChange();
-            }, iteracao * delayUp);
-            continue;
-        }
+    sqrChanged.size++;
+    sqrChanged.player = actualPlayer;
+    // jogador da vez ganha as peças
+    this.playersCounts[actualPlayer] += sqrChanged.size;
 
-        // explodiu
-        this.playersCounts[sqrChanged.player] -= sqrChanged.size;
-        sqrChanged.size = 0;
-        sqrChanged.player = BLANK;
+    if (!sqrChanged.mayExplode()) { return; }
 
-        setTimeout(() => {
-            this.viewMatrix[sqrChanged.x][sqrChanged.y].size = 0;
-            this.viewMatrix[sqrChanged.x][sqrChanged.y].player = BLANK;
-            this.onChange();
-        }, iteracao * delayUp);
+    // explodiu
+    this.playersCounts[actualPlayer] -= sqrChanged.size;
+    sqrChanged.size = 0;
+    sqrChanged.player = BLANK;
 
-        if (this.hasWinner()) { continue; }
+    if (this.hasWinner()) { return; }
 
-        const posicoesLaterais = sqrChanged
-            .getSides()
-            .map(side => this.matrix[side[0]][side[1]]);
+    const posicoesLaterais = sqrChanged
+        .getSides()
+        .map(side => this.matrix[side[0]][side[1]]);
 
-        posicoesLaterais.forEach(sideSqr => {
-            // jogador antigo perde a posição
-            this.playersCounts[sideSqr.player] -= sideSqr.size;
-            sideSqr.size++;
-            sideSqr.player = PLAYER_ACTIVE;
-            // jogador da vez ganha as peças
-            this.playersCounts[sideSqr.player] += sideSqr.size;
-
-            const N_SIZE = sideSqr.size;
-            const N_COLOR = sideSqr.player;
-            setTimeout(() => {
-                this.viewMatrix[sideSqr.x][sideSqr.y].size = N_SIZE;
-                this.viewMatrix[sideSqr.x][sideSqr.y].player = N_COLOR;
-                this.onChange();
-            }, iteracao * delayUp);
-
-            if (sideSqr.mayExplode()) {
-                toProccess.unshift(sideSqr);
-            } else {
-                toProccess.push(sideSqr);
-            }
-        });
-    };
+    posicoesLaterais.forEach(sideSqr => {
+        this.evaluateBoard(sideSqr, actualPlayer);
+    });
 };
 
 BoardImp.prototype.update = function (y, x, player) {
@@ -115,13 +72,14 @@ BoardImp.prototype.update = function (y, x, player) {
         return false;
     }
 
-    this.nextPlayer = Math.max(((this.nextPlayer + 1) % this.players), 1);
-    this.onChange();
+    if (this.hasWinner()) {
+        console.log('game ended');
+        return false;
+    }
 
-    sqr.player = player;
-    sqr.size++;
-    this.playersCounts[player]++;
-    this.evaluateBoard(sqr);
+    this.evaluateBoard(sqr, player);
+    if (!this.hasWinner())
+        this.nextPlayer = Math.max(((this.nextPlayer + 1) % this.players), 1);
     return true;
 };
 

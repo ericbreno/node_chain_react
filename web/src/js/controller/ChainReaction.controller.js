@@ -1,17 +1,18 @@
-app.controller('ChainReactionController', ['$timeout', function ($timeout) {
+app.controller('ChainReactionController', ['$timeout', 'BoardImp', function ($timeout, BoardImp) {
 
-    const BOARD_CHANNEL = 'board';
-    const PLAY_CHANNEL = 'play';
-    const SETTING_CHANNEL = 'boardSetting';
-
-    const colors = ['', 'red', 'green', 'blue', 'yellow', 'pink', 'cyan', 'orange', 'light-green'];
+    const colors = ['light-green', 'red', 'green', 'blue', 'yellow', 'pink', 'cyan', 'orange', 'light-green'];
     const $$ = fn => (data) => $timeout(() => fn(data));
+
+    this.board;
 
     let ws;
 
-    PubSub.sub(BOARD_CHANNEL, $$(board => {
-        this.matrix = board.viewMatrix;
-        this.nextPlayer = board.nextPlayer;
+    PubSub.sub(BOARD_CHANNEL, $$(boardJson => {
+        this.board = new BoardImp(boardJson);
+    }));
+
+    PubSub.sub(UPDATE_PLAY_CHANNEL, $$(play => {
+        this.board.update(play.x, play.y, play.player);
     }));
 
     PubSub.sub('player', $$(player => {

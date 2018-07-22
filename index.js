@@ -1,5 +1,5 @@
 const { wsServer } = require('./src/Server'),
-    { nextPlayer, playerLeaving, resetBoard } = require('./src/ChainReactionController'),
+    { nextPlayer, resetBoard } = require('./src/ChainReactionController'),
     { PubSub } = require('./src/PubSub');
 
 const send = (conn, p) => conn.sendUTF(JSON.stringify(p));
